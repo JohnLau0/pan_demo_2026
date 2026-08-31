@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Details Viewer</title>
+<style>
+  :root {
+    --navy: #0a1f44;
+    --navy-light: #14305e;
+    --blue: #0060ff;
+    --blue-light: #e8f0ff;
+    --ink: #101828;
+    --muted: #667085;
+    --line: #e4e7ec;
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --error: #d92d20;
+    --success: #12b76a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 32px 16px;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .header .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--blue);
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  input[type="text"], textarea {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #fafbfc;
+    color: var(--ink);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  textarea { resize: vertical; min-height: 62px; line-height: 1.4; }
+  input[type="text"]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    background: #fff;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: #eef0f3;
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 7px;
+    cursor: pointer;
+    user-select: none;
+    transition: all .15s ease;
+  }
+  .tab.active {
+    background: #fff;
+    color: var(--navy);
+    box-shadow: 0 1px 3px rgba(16,24,40,0.08);
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  button:hover { background: var(--navy-light); }
+  button:disabled {
+    background: #d0d5dd;
+    cursor: not-allowed;
+  }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  .status-row.error { color: var(--error); }
+  .status-row.success { color: var(--success); }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .iframe-shell {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .iframe-shell.visible { display: block; }
+  .iframe-loading {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  iframe {
+    width: 100%;
+    border: 0;
+    display: block;
+  }
+  .footnote {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 20px;
+    line-height: 1.5;
+  }
+  .footnote a { color: var(--blue); text-decoration: none; }
+  .debug {
+    margin-top: 14px;
+    background: #101828;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: none;
+  }
+  .debug.visible { display: block; }
+  .debug pre {
+    margin: 0;
+    color: #d0d5dd;
+    font-size: 11px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .debug .debug-label {
+    color: #667085;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="dot"></div>
+    <h1>Card Details Viewer</h1>
+  </div>
+
+  <div class="panel">
+    <div class="tabs" id="envTabs">
+      <div class="tab active" data-env="sandbox">Sandbox</div>
+      <div class="tab" data-env="production">Production</div>
+    </div>
+    <div class="field">
+      <label for="iframeHost">Iframe host</label>
+      <input type="text" id="iframeHost" autocomplete="off" spellcheck="false">
+      <div class="hint" id="envHint"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-mode="details">Details</div>
+      <div class="tab" data-mode="pin">View PIN</div>
+      <div class="tab" data-mode="change-pin">Change PIN</div>
+    </div>
+
+    <div class="field">
+      <label for="cardId">Card ID</label>
+      <input type="text" id="cardId" placeholder="75c89b87-eb15-453a-85d7-621c104f707d" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="field">
+      <label for="token">PAN Token</label>
+      <textarea id="token" placeholder="Paste the token from Create a PAN token" autocomplete="off" spellcheck="false"></textarea>
+      <div class="hint">Generate this server-side by calling <code>POST /api/v1/issuing/pantokens/create</code> with the card ID. The token expires 60 seconds after issue, so paste it and load right away.</div>
+    </div>
+
+    <div class="field" style="margin-top:18px;">
+      <button id="loadBtn">Load card details</button>
+    </div>
+
+    <div class="status-row" id="statusRow">
+      <div class="status-dot"></div>
+      <span id="statusText">Waiting for card ID and token</span>
+    </div>
+  </div>
+
+  <div class="iframe-shell" id="iframeShell">
+    <div class="iframe-loading" id="iframeLoading">Loading secure frame…</div>
+    <iframe id="cardFrame" style="display:none;" frameborder="0"></iframe>
+  </div>
+
+  <div class="debug" id="debugPanel">
+    <div class="debug-label">Debug — constructed frame URL</div>
+    <pre id="debugSrc">—</pre>
+  </div>
+
+  <div class="footnote">
+    Card data is rendered entirely inside Airwallex's own PCI-compliant iframe — it never touches this page's code.<br>
+    <a href="https://www.airwallex.com/docs/issuing/manage-cards/retrieve-sensitive-card-details/secure-iframes" target="_blank" rel="noopener">Secure iframes documentation ↗</a><br>
+    Not loading? <a href="#" id="downloadHint">Open this file directly in a browser tab</a> instead of a preview pane — some previews block third-party iframes.
+  </div>
+
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('#tabs .tab');
+  const cardIdInput = document.getElementById('cardId');
+  const tokenInput = document.getElementById('token');
+  const loadBtn = document.getElementById('loadBtn');
+  const statusRow = document.getElementById('statusRow');
+  const statusText = document.getElementById('statusText');
+  const iframeShell = document.getElementById('iframeShell');
+  const iframeLoading = document.getElementById('iframeLoading');
+  const cardFrame = document.getElementById('cardFrame');
+
+  let mode = 'details'; // 'details' | 'pin' | 'change-pin'
+  let currentCardId = null;
+  let loadTimeout = null;
+  const debugPanel = document.getElementById('debugPanel');
+  const debugSrc = document.getElementById('debugSrc');
+  const iframeHostInput = document.getElementById('iframeHost');
+  const envHint = document.getElementById('envHint');
+  const envTabs = document.querySelectorAll('#envTabs .tab');
+
+  const envDefaults = {
+    sandbox: {
+      host: 'https://demo.airwallex.com',
+      hint: 'Confirmed sandbox host. Generate the PAN token against api.sandbox.airwallex.com for this host.'
+    },
+    production: {
+      host: 'https://airwallex.com',
+      hint: 'Generate the PAN token against api.airwallex.com (production) for this host.'
+    }
+  };
+
+  function applyEnv(env) {
+    envTabs.forEach(t => t.classList.toggle('active', t.dataset.env === env));
+    iframeHostInput.value = envDefaults[env].host;
+    envHint.textContent = envDefaults[env].hint;
+  }
+
+  envTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      applyEnv(tab.dataset.env);
+      resetFrame();
+    });
+  });
+
+  applyEnv('sandbox');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      mode = tab.dataset.mode;
+      resetFrame();
+      setStatus('Waiting for card ID and token', 'neutral');
+    });
+  });
+
+  function setStatus(text, kind) {
+    statusText.textContent = text;
+    statusRow.className = 'status-row' + (kind === 'error' ? ' error' : kind === 'success' ? ' success' : '');
+  }
+
+  function resetFrame() {
+    iframeShell.classList.remove('visible');
+    iframeLoading.style.display = 'block';
+    iframeLoading.textContent = 'Loading secure frame…';
+    cardFrame.style.display = 'none';
+    cardFrame.removeAttribute('src');
+    cardFrame.style.height = '0px';
+  }
+
+  const endpointFor = {
+    'details': (id, host) => `${host}/issuing/pci/v2/${id}/details`,
+    'pin': (id, host) => `${host}/issuing/pci/v2/${id}/pin`,
+    'change-pin': (id, host) => `${host}/issuing/pci/v2/${id}/change-pin`,
+  };
+
+  const rulesFor = {
+    'details': {
+      '.details': {
+        backgroundColor: '#0a1f44',
+        color: '#ffffff',
+        fontFamily: 'Arial, sans-serif',
+        borderRadius: '18px',
+        padding: '22px 24px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      },
+      '.details__row': {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '15px 0'
+      },
+      '.details__row--card-number': {
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        paddingBottom: '18px'
+      },
+      '.details__row--expiry-date': {
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+      },
+      '.details__label': {
+        fontSize: '11px',
+        fontWeight: '600',
+        letterSpacing: '0.06em',
+        color: 'rgba(255,255,255,0.55)'
+      },
+      '.details__value': {
+        fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+        fontSize: '19px',
+        fontWeight: '600',
+        letterSpacing: '0.08em',
+        color: '#ffffff'
+      },
+      '.details__button': {
+        color: 'rgba(255,255,255,0.6)'
+      },
+      '.details__button:hover': {
+        color: '#ffffff'
+      },
+      '.details__button svg': {
+        color: 'currentColor'
+      }
+    },
+    'pin': {
+      '.pin': {
+        backgroundColor: '#0a1f44',
+        color: '#ffffff',
+        fontFamily: 'Arial, sans-serif',
+        borderRadius: '18px',
+        padding: '24px'
+      },
+      '.pin__value': {
+        fontFamily: "'SF Mono', Menlo, Consolas, monospace",
+        fontSize: '30px',
+        fontWeight: '700',
+        letterSpacing: '0.35em',
+        color: '#ffffff'
+      }
+    },
+    'change-pin': {
+      '.change-pin': {
+        backgroundColor: '#0a1f44',
+        color: '#ffffff',
+        fontFamily: 'Arial, sans-serif',
+        borderRadius: '18px',
+        padding: '24px'
+      },
+      '.change-pin__label': {
+        fontSize: '12px',
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.6)'
+      },
+      '.change-pin__input': {
+        borderRadius: '10px',
+        border: '1.5px solid rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        color: '#ffffff',
+        fontSize: '18px',
+        padding: '10px 12px',
+        letterSpacing: '0.3em'
+      },
+      '.change-pin__input:focus': {
+        border: '1.5px solid #0060ff'
+      },
+      '.change-pin__button--submit': {
+        backgroundColor: '#0060ff',
+        color: '#ffffff',
+        borderRadius: '10px',
+        border: 'none',
+        padding: '11px'
+      },
+      '.change-pin__button--submit:hover': {
+        backgroundColor: '#1a70ff'
+      },
+      '.change-pin__button--cancel': {
+        color: 'rgba(255,255,255,0.6)',
+        border: '1.5px solid rgba(255,255,255,0.15)',
+        borderRadius: '10px'
+      }
+    }
+  };
+
+  loadBtn.addEventListener('click', () => {
+    const cardId = cardIdInput.value.trim();
+    const token = tokenInput.value.trim();
+    const host = iframeHostInput.value.trim().replace(/\/$/, '');
+
+    if (!cardId || !token) {
+      setStatus('Enter both a card ID and a PAN token', 'error');
+      return;
+    }
+    if (!host) {
+      setStatus('Enter an iframe host', 'error');
+      return;
+    }
+
+    currentCardId = cardId;
+    resetFrame();
+
+    const hash = {
+      token: token,
+      langKey: 'en',
+      rules: rulesFor[mode]
+    };
+    const hashURI = encodeURIComponent(JSON.stringify(hash));
+    const src = `${endpointFor[mode](cardId, host)}#${hashURI}`;
+
+    iframeShell.classList.add('visible');
+    setStatus('Loading…', 'neutral');
+
+    debugPanel.classList.add('visible');
+    debugSrc.textContent = src;
+
+    cardFrame.onload = () => {
+      console.log('[card-viewer] iframe onload fired for', src);
+      // Reveal on the browser's native onload rather than waiting only on
+      // Airwallex's postMessage — postMessage can fail silently if its
+      // targetOrigin doesn't match this page's origin (e.g. file:// pages
+      // or sandboxed previews), even though the frame content loaded fine.
+      clearTimeout(loadTimeout);
+      iframeLoading.style.display = 'none';
+      cardFrame.style.display = 'block';
+      if (statusText.textContent === 'Loading…') {
+        setStatus('Loaded', 'success');
+      }
+    };
+    cardFrame.onerror = (e) => {
+      setStatus('Frame failed to load — check the console and debug URL below', 'error');
+      console.error('[card-viewer] iframe onerror', e);
+    };
+
+    cardFrame.src = src;
+
+    clearTimeout(loadTimeout);
+    loadTimeout = setTimeout(() => {
+      if (iframeLoading.style.display !== 'none') {
+        setStatus('No response after 8s — check the debug URL below, and confirm the card ID matches the token', 'error');
+      }
+    }, 8000);
+  });
+
+  window.addEventListener('message', (event) => {
+    if (!event.origin.includes('airwallex.com')) return;
+    const data = event.data || {};
+    const type = data.type || '';
+    if (!currentCardId || !type.startsWith(currentCardId)) return;
+
+    clearTimeout(loadTimeout);
+
+    if (type.endsWith(':mounted')) {
+      // first render, keep loading indicator until :loaded
+    } else if (type.endsWith(':loading')) {
+      setStatus('Fetching card data…', 'neutral');
+    } else if (type.endsWith(':loaded') || type.endsWith(':changePin:mounted')) {
+      iframeLoading.style.display = 'none';
+      cardFrame.style.display = 'block';
+      setStatus('Loaded', 'success');
+    } else if (type.endsWith(':resize') || type.endsWith(':changePin:resize')) {
+      if (typeof data.height === 'number') {
+        cardFrame.style.height = data.height + 'px';
+      }
+    } else if (type.endsWith(':error') || type.endsWith(':changePin:error')) {
+      iframeLoading.style.display = 'none';
+      cardFrame.style.display = 'block';
+      const err = data.error || data.errorCode || 'unknown_error';
+      setStatus('Error: ' + err.replace(/_/g, ' '), 'error');
+    } else if (type.endsWith(':changePin:success')) {
+      setStatus('PIN changed successfully', 'success');
+    } else if (type.endsWith(':changePin:submitting')) {
+      setStatus('Submitting new PIN…', 'neutral');
+    } else if (type.endsWith(':changePin:cancel')) {
+      setStatus('Cancelled', 'neutral');
+    }
+  });
+</script>
+</body>
+</html>
